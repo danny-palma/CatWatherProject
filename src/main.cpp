@@ -9,8 +9,8 @@
 
 MFRC522 mfrc522(SS_PIN, RST_PIN); // Crea un objeto MFRC522
 
-const char *ssid = "FibraETB0750";
-const char *password = "Caro39629";
+const char *ssid = "Danny's A25";
+const char *password = "danny2017";
 
 int PinReset = 0;
 int btnState = false;
