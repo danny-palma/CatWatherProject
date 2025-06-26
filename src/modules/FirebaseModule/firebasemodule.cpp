@@ -36,10 +36,10 @@ void loopFirebase();
 void processData(AsyncResult &aResult);
 
 // Operaciones
-String pushValue(const String &path, const object_t &value);
+String pushValue(const String &value);
 bool setValue(const String &path, const object_t &value);
 bool updateValue(const String &path, const object_t &jsonPatch);
-String getValue(const String &path, String &outPayload);
+JsonDocument getValue();
 String deleteValue(const String &path);
 
 // Ejemplo de uso de las operaciones
@@ -96,10 +96,9 @@ void processData(AsyncResult &aResult)
 }
 
 // PUSH: Añade un valor nuevo (genera clave única)
-template <typename T>
-String pushValue(const String &path, const T &value)
+String pushValue(const String &value)
 {
-  String name = Database.push<T>(aClient, path, value);
+  String name = Database.push<String>(aClient, "/datos", value);
   if (aClient.lastError().code() == 0)
   {
     Serial.printf("Push OK: %s\n", name.c_str());
@@ -147,22 +146,24 @@ String pushValue(const String &path, const T &value)
 //   return name;
 // }
 
-// // GET: Obtiene el valor en la ruta dada
-// String getValue(const String &path, String &outPayload)
-// {
-//   String name = Database.get(aClient, path, outPayload);
-//   if (aClient.lastError().code() == 0)
-//   {
-//     Serial.printf("Get OK: %s\nPayload: %s\n", name.c_str(), outPayload.c_str());
-//   }
-//   else
-//   {
-//     Serial.printf("Get ERROR: %s (code %d)\n",
-//                   aClient.lastError().message().c_str(),
-//                   aClient.lastError().code());
-//   }
-//   return name;
-// }
+// GET: Obtiene el valor en la ruta dada
+JsonDocument getValue()
+{
+  String name = Database.get(aClient, "/datos");
+  if (aClient.lastError().code() == 0)
+  {
+    Serial.printf("Get OK: %s\nPayload: %s\n", name.c_str());
+  }
+  else
+  {
+    Serial.printf("Get ERROR: %s (code %d)\n",
+                  aClient.lastError().message().c_str(),
+                  aClient.lastError().code());
+  }
+  JsonDocument jsonDoc;
+  deserializeJson(jsonDoc, name);
+  return jsonDoc;
+}
 
 // // DELETE: Elimina el nodo en la ruta dada
 // String deleteValue(const String &path)
@@ -190,7 +191,7 @@ void ejemploOperacionesDB()
 
 
   // Push
-  pushValue("/ejemplo/push", jsonDoc);
+  pushValue(serializeJson(jsonDoc));
 
   // // Set
   // setValue("/ejemplo/set", json);
