@@ -1,7 +1,7 @@
 #ifndef FIREBASE_MODULE_H
 #define FIREBASE_MODULE_H
 
-void SetupFirebase(const char *firebaseHost, const char *firebaseAuth);
-void LoopFirebase();
-
+void setupFirebase();
+void loopFirebase();
+void ejemploOperacionesDB();
 #endif // FIREBASE_MODULE_H
