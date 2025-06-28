@@ -1,8 +1,7 @@
 #include <Arduino.h>
-#include "modules/wifimodule/WifiModule.h"
 #include "modules/rfidmodule/rfidmodule.h"
 #include "modules/UltrasonicModule/ultrasonicmodule.h"
-#include "modules/FirebaseModule/FirebaseModule.h"
+#include "modules/FirebaseModule/example.h" // Importa las funciones de ejemplo de Firebase
 #include <ArduinoJson.h>
 // definicion de pines
 #define RESET_PIN 0 // Pin de reset del ESP32, conectado al GPIO 0
@@ -23,41 +22,11 @@ int btnState = false;
 void setup()
 {
   Serial.begin(9600);
-  // Crear semáforos para cada módulo
-  static SemaphoreHandle_t wifiSemaphore = xSemaphoreCreateBinary();
-  static SemaphoreHandle_t firebaseSemaphore = xSemaphoreCreateBinary();
-  static SemaphoreHandle_t rfidSemaphore = xSemaphoreCreateBinary();
-  static SemaphoreHandle_t ultrasonicSemaphore = xSemaphoreCreateBinary();
-  // Modificar las tareas para que den la señal cuando terminen
-  xTaskCreate([](void *) {
-    ultrasonicModuleInit(TANK_TRIGGER_PIN, TANK_ECHO_PIN, BOWL_TRIGGER_PIN, BOWL_ECHO_PIN);
-    xSemaphoreGive(ultrasonicSemaphore);
-    vTaskDelete(NULL);
-  }, "InitUltrasonic", 2048, NULL, 1, NULL);
+  ultrasonicModuleInit(TANK_TRIGGER_PIN, TANK_ECHO_PIN, BOWL_TRIGGER_PIN, BOWL_ECHO_PIN);
 
-  xTaskCreate([](void *) {
-    setupFirebase();
-    xSemaphoreGive(firebaseSemaphore);
-    vTaskDelete(NULL);
-  }, "InitFirebase", 4096, NULL, 1, NULL);
+  RFIDSetup(RFID_SS_PIN, RFID_RST_PIN);
 
-  xTaskCreate([](void *) {
-    SetupWifi(ssid, password, RESET_PIN);
-    xSemaphoreGive(wifiSemaphore);
-    vTaskDelete(NULL);
-  }, "InitWifi", 2048, NULL, 1, NULL);
-
-  xTaskCreate([](void *) {
-    RFIDSetup(RFID_SS_PIN, RFID_RST_PIN);
-    xSemaphoreGive(rfidSemaphore);
-    vTaskDelete(NULL);
-  }, "InitRFID", 2048, NULL, 1, NULL);
-
-  // Esperar a que todos los módulos se inicialicen
-  xSemaphoreTake(rfidSemaphore, portMAX_DELAY);
-  xSemaphoreTake(ultrasonicSemaphore, portMAX_DELAY);
-  xSemaphoreTake(wifiSemaphore, portMAX_DELAY);
-  xSemaphoreTake(firebaseSemaphore, portMAX_DELAY);
+  firebaseSetup(ssid, password);
 }
 
 // Definir tareas
@@ -70,29 +39,11 @@ void ultrasonicTask(void *parameter)
   }
 }
 
-void firebaseTask(void *parameter)
-{
-  for (;;)
-  {
-    loopFirebase();
-    vTaskDelay(pdMS_TO_TICKS(100));
-  }
-}
-
 void rfidTask(void *parameter)
 {
   for (;;)
   {
     RFIDLoop();
-    vTaskDelay(pdMS_TO_TICKS(100));
-  }
-}
-
-void wifiTask(void *parameter)
-{
-  for (;;)
-  {
-    LoopWifi(RESET_PIN, btnState);
     vTaskDelay(pdMS_TO_TICKS(100));
   }
 }
@@ -106,10 +57,8 @@ void loop()
     // Crear tareas principales
     xTaskCreate(ultrasonicTask, "Ultrasonic", 2048, NULL, 1, NULL);
     xTaskCreate(rfidTask, "RFID", 2048, NULL, 1, NULL);
-    xTaskCreate(wifiTask, "WiFi", 2048, NULL, 1, NULL);
-    xTaskCreate(firebaseTask, "Firebase", 4096, NULL, 1, NULL);
     tasksCreated = true;
   }
-  ejemploOperacionesDB(); // Llamar a la función de ejemplo de Firebase
+  firebaseLoop(); // Llamar a la función de ejemplo de Firebase
   vTaskDelay(pdMS_TO_TICKS(1000)); // Mantener el loop principal vivo
 }
