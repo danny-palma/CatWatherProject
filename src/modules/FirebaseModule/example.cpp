@@ -21,12 +21,6 @@
 #define USER_PASSWORD "cat123"
 #define DATABASE_URL "https://cat-water-home-xhy80b-default-rtdb.firebaseio.com/"
 
-void processData(AsyncResult &aResult);
-void get_async();
-void get_async2();
-void get_await();
-void create_dummy_data();
-
 SSL_CLIENT ssl_client;
 
 using AsyncClient = AsyncClientClass;
@@ -58,7 +52,7 @@ void firebaseSetup(const char *SSID, const char *Password)
   set_ssl_client_insecure_and_buffer(ssl_client);
 
   Serial.println("Initializing app...");
-  //initializeApp(aClient, app, getAuth(user_auth), auth_debug_print, "🔐 authTask");
+  // initializeApp(aClient, app, getAuth(user_auth), auth_debug_print, "🔐 authTask");
 
   // Or intialize the app and wait.
   initializeApp(aClient, app, getAuth(user_auth), 120 * 1000, auth_debug_print);
@@ -77,17 +71,6 @@ void firebaseLoop()
   {
     taskComplete = true;
     create_dummy_data();
-
-    Serial.println("------------------------------");
-    Serial.println("🕒 Await get values");
-    Serial.println("------------------------------");
-    get_await();
-
-    Serial.println("------------------------------");
-    Serial.println("🎈 Async get values");
-    Serial.println("------------------------------");
-    get_async();
-    get_async2();
   }
 
   // For async call with AsyncResult.
@@ -121,46 +104,6 @@ void processData(AsyncResult &aResult)
   }
 }
 
-void get_async()
-{
-  // Get the generic value (no waits)
-  // Using Database.get with the callback function or AsyncResult object
-
-  Serial.println("Getting the value... ");
-
-  // Async call with callback function.
-  Database.get(aClient, "/examples/Get/Async/data1", processData, false /* only for Stream */, "getTask");
-
-  // Apply the filter
-  DatabaseOptions options;
-  options.filter.orderBy("Data").startAt(105).endAt(120).limitToLast(8);
-
-  Serial.println("Getting the value with filter... ");
-
-  // Async call with callback function.
-  Database.get(aClient, "/examples/Get/Async/data3", options, processData, "queryTask");
-}
-
-void get_async2()
-{
-  // Get the generic value (no waits)
-  // Using Database.get with the callback function or AsyncResult object
-
-  Serial.println("Getting the value... ");
-
-  // Async call with AsyncResult for returning result.
-  Database.get(aClient, "/examples/Get/Async/data2", databaseResult);
-
-  // Apply the filter
-  DatabaseOptions options;
-  options.filter.orderBy("Data").startAt(105).endAt(120).limitToLast(8);
-
-  Serial.println("Getting the value with filter... ");
-
-  // Async call with AsyncResult for returning result.
-  Database.get(aClient, "/examples/Get/Async/data4", options, databaseResult);
-}
-
 template <typename T>
 void check_and_print_value(T value)
 {
@@ -171,34 +114,48 @@ void check_and_print_value(T value)
     Serial.println(value);
   }
   else
+  {
     Firebase.printf("Error, msg: %s, code: %d\n", aClient.lastError().message().c_str(), aClient.lastError().code());
+  }
 }
 
-void get_await()
+template <typename T>
+T databaseGet(String path)
 {
-  // Get the specific value (waits until the value was received)
-  // Using Database.get<T>
-
-  Serial.println("Getting the int value... ");
-  int value1 = Database.get<int>(aClient, "/examples/Get/Await/data");
+  Serial.printf("Getting value from path: %s\n", path.c_str());
+  T value1 = Database.get<T>(aClient, path);
   check_and_print_value(value1);
+  return value1;
+}
 
-  Serial.println("Getting the bool value... ");
-  bool value2 = Database.get<bool>(aClient, "/examples/Get/Await/data");
-  check_and_print_value(value2);
+template <typename T>
+void databaseSet(String path, T value)
+{
+  Serial.printf("Setting value at path: %s\n", path.c_str());
+  Database.set<T>(aClient, path, value);
+  if (aClient.lastError().code() == 0)
+  {
+    Serial.println("Set successful");
+  }
+  else
+  {
+    Firebase.printf("Error, msg: %s, code: %d\n", aClient.lastError().message().c_str(), aClient.lastError().code());
+  }
+}
 
-  Serial.println("Getting the float value... ");
-  float value3 = Database.get<float>(aClient, "/examples/Get/Await/data");
-  check_and_print_value(value3);
-
-  Serial.println("Getting the double value... ");
-  double value4 = Database.get<double>(aClient, "/examples/Get/Await/data");
-  check_and_print_value(value4);
-
-  Serial.println("Getting the String value... ");
-  // The filter can be applied.
-  String value5 = Database.get<String>(aClient, "/examples/Get/Await/data");
-  check_and_print_value(value5);
+void databasePushJson(object_t &obj, String path)
+{
+  Serial.printf("Pushing JSON object to %s\n", path.c_str());
+  Database.push(aClient, path, obj);
+  if (aClient.lastError().code() == 0)
+  {
+    Serial.println("Push successful");
+  }
+  else
+  {
+    Firebase.printf("Error, msg: %s, code: %d\n", aClient.lastError().message().c_str(), aClient.lastError().code());
+  }
+  Serial.println();
 }
 
 void create_dummy_data()
@@ -207,5 +164,5 @@ void create_dummy_data()
   Database.set<number_t>(aClient, "/examples/Get/Async/data2", number_t(987.654321, 6));
   Database.set<number_t>(aClient, "/examples/Get/Async/data3", number_t(321.234567, 6));
   Database.set<number_t>(aClient, "/examples/Get/Async/data4", number_t(456.789012, 6));
-  Database.set<number_t>(aClient, "/examples/Get/Await/data", number_t(63.475869, 6));
+  Database.push<number_t>(aClient, "/examples/Get/Await/messages", number_t(63.475869, 6));
 }
