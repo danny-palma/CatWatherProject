@@ -4,7 +4,12 @@
 #include <MFRC522.h>
 #include <SPI.h> // Necesario para el RC522
 
-MFRC522 mfrc522; // Crea un objeto MFRC522
+
+#define pinTankActivator 26
+#define pinBowlActivator 25
+
+MFRC522 mfrc522 ;
+bool tagDetected = false; // Variable para indicar si se ha detectado una tarjeta RFID
 
 void RFIDSetup(int RFID_SS_PIN, int RFID_RST_PIN)
 {
@@ -27,7 +32,16 @@ void RFIDLoop()
     if (!mfrc522.PICC_ReadCardSerial()) {
         return; // No se pudo leer la tarjeta, salir de la función
     }
-
+    tagDetected = true;
+    
+    // Aquí iría la lógica para manejar la tarjeta RFID detectada
+    tagDetected = false; // Reiniciar el estado de detección
+    pinMode(pinBowlActivator, OUTPUT);
+    digitalWrite(pinBowlActivator, HIGH); // Activar el tanque
+    pinMode(pinTankActivator, OUTPUT);
+    digitalWrite(pinTankActivator, HIGH); // Activar el tanque
+    Serial.println("Tanque activado.");
+    delay(200); // Esperar 2 segundos
     // Muestra el UID de la tarjeta en el monitor serial
     Serial.print("UID de la tarjeta: ");
     for (byte i = 0; i < mfrc522.uid.size; i++) {

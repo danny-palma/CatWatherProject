@@ -2,6 +2,7 @@
 #include "modules/rfidmodule/rfidmodule.h"
 #include "modules/UltrasonicModule/ultrasonicmodule.h"
 #include "modules/FirebaseModule/example.h" // Importa las funciones de ejemplo de Firebase
+#include "modules/PincipalModule/principal.h" // Importa las funciones del módulo principal
 #include <ArduinoJson.h>
 // definicion de pines
 #define RESET_PIN 0 // Pin de reset del ESP32, conectado al GPIO 0
@@ -60,5 +61,6 @@ void loop()
     tasksCreated = true;
   }
   firebaseLoop(); // Llamar a la función de ejemplo de Firebase
+  principalloop();
   vTaskDelay(pdMS_TO_TICKS(1000)); // Mantener el loop principal vivo
 }
